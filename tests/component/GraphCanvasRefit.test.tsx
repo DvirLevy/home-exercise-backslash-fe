@@ -26,33 +26,72 @@ const route: RouteResult = {
   edges: [],
 }
 
-const view = (mode: 'highlight' | 'routeOnly', selected: string | null = null) => (
+type Mode = 'highlight' | 'routeOnly'
+
+const view = (opts: { route?: RouteResult | null; mode?: Mode; selected?: string | null } = {}) => (
   <div style={{ width: 1000, height: 700 }}>
-    <GraphCanvas graph={full} route={route} mode={mode} selected={selected} onSelect={vi.fn()} />
+    <GraphCanvas
+      graph={full}
+      route={opts.route ?? null}
+      mode={opts.mode ?? 'highlight'}
+      selected={opts.selected ?? null}
+      onSelect={vi.fn()}
+    />
   </div>
 )
 
-describe('GraphCanvas refit', () => {
+describe('GraphCanvas view focus', () => {
   beforeEach(() => fitView.mockClear())
 
-  it('fits the view again when the set of drawn nodes changes (Route only)', () => {
-    const { rerender } = render(view('highlight'))
-    expect(fitView).not.toHaveBeenCalled() // the initial fit is done by <ReactFlow fitView>
+  it('leaves the initial fit to <ReactFlow> when there is no route', () => {
+    render(view())
+    expect(fitView).not.toHaveBeenCalled()
+  })
 
-    rerender(view('routeOnly'))
+  it('focuses on the route nodes when a route is applied, keeping the rest of the graph drawn', () => {
+    const { rerender } = render(view())
+    rerender(view({ route }))
+
+    expect(fitView).toHaveBeenCalledTimes(1)
+    expect(fitView).toHaveBeenLastCalledWith(expect.objectContaining({ nodes: [{ id: 'a' }] }))
+    for (const name of ['a', 'b', 'c', 'd'])
+      expect(screen.getByTestId(`node-${name}`)).toBeInTheDocument()
+  })
+
+  it('focuses on the route when it is already there at the start (e.g. a shared URL)', () => {
+    render(view({ route }))
+    expect(fitView).toHaveBeenCalledTimes(1)
+    expect(fitView).toHaveBeenLastCalledWith(expect.objectContaining({ nodes: [{ id: 'a' }] }))
+  })
+
+  it('fits the whole drawing again when the route is cleared', () => {
+    const { rerender } = render(view({ route }))
+    fitView.mockClear()
+
+    rerender(view())
+
+    expect(fitView).toHaveBeenCalledTimes(1)
+    expect(fitView.mock.lastCall![0].nodes).toBeUndefined()
+  })
+
+  it('refits when switching to Route only, which changes the drawn nodes', () => {
+    const { rerender } = render(view({ route }))
+    fitView.mockClear()
+
+    rerender(view({ route, mode: 'routeOnly' }))
 
     expect(fitView).toHaveBeenCalledTimes(1)
     expect(screen.queryByTestId('node-d')).not.toBeInTheDocument()
-
-    rerender(view('highlight'))
-    expect(fitView).toHaveBeenCalledTimes(2)
-    expect(screen.getByTestId('node-d')).toBeInTheDocument()
   })
 
-  it('does not move the view for changes that keep the same nodes, like selecting one', () => {
-    const { rerender } = render(view('highlight'))
-    rerender(view('highlight', 'b'))
-    rerender(view('highlight', 'c'))
+  it('does not move the view when the same route is refetched, or a node is selected', () => {
+    const { rerender } = render(view({ route }))
+    fitView.mockClear()
+
+    rerender(view({ route: { ...route, nodes: [...route.nodes] } })) // new object, same nodes
+    rerender(view({ route, selected: 'b' }))
+    rerender(view({ route, selected: 'c' }))
+
     expect(fitView).not.toHaveBeenCalled()
   })
 })

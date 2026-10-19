@@ -48,10 +48,19 @@ The backend only accepts browsers from the origins in its own `CORS_ORIGINS`: `h
    combined with OR; all roles must hold (AND). The query is in the URL (`?start=public&through=vulnerable&end=sink`),
    so it can be shared.
 4. **Highlight route** (default) keeps the whole graph and dims everything off the route; **Route only** draws just the
-   matching routes. Above 1,500 nodes only Route only is available, and nothing is drawn until a query is chosen.
+   matching routes. When a query is applied the view zooms to the route; the "fit view" control still fits everything.
+   Above 1,500 nodes only Route only is available, and nothing is drawn until a query is chosen. A route result with
+   more than 1,500 nodes is never drawn either: the app asks you to narrow the query.
 
 Filters are read-only here: they are created in the backend and only listed and picked in the app. A filter whose
 stored rule no longer compiles is shown as unavailable and cannot be picked.
+
+## Performance
+
+The graph page (React Flow, d3, dagre) is a lazy chunk, prefetched when the browser is idle after the first screen.
+Vendor code is split into stable, separately cached chunks (`react`, `router`, `data`, `zod`, `graph-vendor`, see
+`vite.config.ts`); the groups are narrow on purpose so graph-only libraries never end up in the first-screen download.
+Check the result with `npm run build` (no chunk should exceed 500 kB).
 
 ## Docker
 

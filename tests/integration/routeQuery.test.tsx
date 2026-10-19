@@ -234,4 +234,34 @@ describe('large graphs', () => {
     expect(screen.getByRole('radio', { name: 'Highlight route' })).toBeDisabled()
     expect(screen.getByRole('radio', { name: 'Route only' })).toBeChecked()
   })
+
+  it('does not draw a route with more than 1,500 nodes and asks to narrow the query', async () => {
+    backend.add({
+      id: 'big',
+      name: 'Huge',
+      // every node is public, so start=public matches the whole 1,501-node graph
+      nodes: Array.from({ length: 1501 }, (_, i) => node(`svc-${i}`, { publicExposed: true })),
+      edges: [],
+    })
+    renderApp('/graphs/big?start=public')
+
+    expect(await screen.findByText('This route is too large to draw.')).toBeInTheDocument()
+    expect(screen.getByText(/1,501 nodes and 0 edges/)).toBeInTheDocument()
+    expect(screen.getByText(/Narrow the query/)).toBeInTheDocument()
+    expect(screen.queryByTestId('node-svc-0')).not.toBeInTheDocument()
+    // the query panel is still there to narrow it
+    expect(screen.getByRole('button', { name: 'Add filter to "End at"' })).toBeInTheDocument()
+  })
+
+  it('draws the route again once the query is narrow enough', async () => {
+    backend.add({
+      id: 'big',
+      name: 'Huge',
+      nodes: Array.from({ length: 1501 }, (_, i) => node(`svc-${i}`, { publicExposed: i < 3 })),
+      edges: [],
+    })
+    renderApp('/graphs/big?start=public')
+    expect(await screen.findByTestId('node-svc-0')).toBeInTheDocument()
+    expect(screen.queryByText('This route is too large to draw.')).not.toBeInTheDocument()
+  })
 })

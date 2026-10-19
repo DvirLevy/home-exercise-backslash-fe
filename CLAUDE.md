@@ -51,3 +51,10 @@ inside the feature, by two or more → shared folder. Features do not import eac
 - `pages/GraphWorkspace.tsx` composes canvas, query panel and details; `planCanvas` (`visualization/utils/largeGraph`)
   decides the mode (forced Route only above 1,500 nodes). The fake backend in `tests/msw/backend.ts` implements
   filters and routes with the real semantics for small graphs.
+- Code splitting: `app/graphPageChunk.ts` lazy-loads `pages/GraphPage` (and prefetches it from `main.tsx`);
+  `vite.config.ts` has narrow `codeSplitting.groups`. Do not widen them to e.g. all of `node_modules`/radix: that
+  pulls graph-only code into the first-screen chunks. Keep every chunk under 500 kB.
+- The canvas view: `GraphCanvas` focuses on the route nodes when a route is applied and fits everything when it is
+  cleared or the drawn nodes change; routes over `LARGE_GRAPH_NODES` are not drawn (`planCanvas().routeTooLarge`).
+- Browser QA: make sure nothing else listens on port 5173 (a stale `vite` dev server once made a "production" run hit
+  the dev server). The backend allows only `http://localhost:5173` and `:8080` as origins.

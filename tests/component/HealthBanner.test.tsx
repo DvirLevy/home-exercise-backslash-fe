@@ -1,32 +1,28 @@
 import { screen } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
-import { HealthBanner, HealthIndicator } from '@/app/HealthBanner'
+import { HealthBanner } from '@/app/HealthBanner'
 import { API } from '../msw/fixtures'
 import { server } from '../msw/server'
 import { renderComponent } from '../test-utils/render'
 
 describe('HealthBanner', () => {
-  it('shows nothing and an online dot when the API is healthy', async () => {
-    renderComponent(
-      <>
-        <HealthBanner />
-        <HealthIndicator />
-      </>,
-    )
-    expect(await screen.findByText('API online')).toBeInTheDocument()
+  it('shows nothing when the API is healthy', async () => {
+    renderComponent(<HealthBanner />)
+    // Give the health query time to settle before asserting that nothing is shown.
+    await new Promise((resolve) => setTimeout(resolve, 50))
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('never shows an "API online" status', async () => {
+    renderComponent(<HealthBanner />)
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(screen.queryByText(/API online/i)).not.toBeInTheDocument()
   })
 
   it('shows a banner when the API is unreachable', async () => {
     server.use(http.get(`${API}/health`, () => HttpResponse.error()))
-    renderComponent(
-      <>
-        <HealthBanner />
-        <HealthIndicator />
-      </>,
-    )
+    renderComponent(<HealthBanner />)
     expect(await screen.findByRole('alert')).toHaveTextContent("Can't reach the API")
-    expect(screen.getByText('API offline')).toBeInTheDocument()
   })
 
   it('shows a banner when the database is down (503)', async () => {
