@@ -8,7 +8,6 @@ import { RenameDialog } from '@/features/graph/components/RenameDialog'
 import { UploadDialog } from '@/features/graph/components/UploadDialog'
 import { useGraph } from '@/features/graph/hooks/useGraph'
 import { pluralize } from '@/utils/format'
-import { HealthIndicator } from './HealthBanner'
 
 function GraphActions({ id }: { id: string }) {
   const { data: graph } = useGraph(id)
@@ -51,7 +50,7 @@ export function TopBar() {
   const id = match?.params.id
 
   return (
-    <header className="bg-card flex h-14 shrink-0 items-center gap-3 border-b px-4">
+    <header className="bg-card flex min-h-14 shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b px-4 py-2">
       <Link to="/" className="flex items-center gap-2 font-semibold">
         <span className="bg-primary text-primary-foreground grid size-6 place-items-center rounded-md">
           <Diamond className="size-3.5" aria-hidden />
@@ -59,7 +58,6 @@ export function TopBar() {
         Graph Explorer
       </Link>
       {id ? <GraphActions key={id} id={id} /> : <div className="flex-1" />}
-      <HealthIndicator />
     </header>
   )
 }

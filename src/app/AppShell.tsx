@@ -9,12 +9,15 @@ export function AppShell() {
     <div className="flex h-full flex-col">
       <TopBar />
       <HealthBanner />
-      <div className="flex min-h-0 flex-1">
-        <aside aria-label="Graphs" className="bg-card w-64 shrink-0 overflow-auto border-r p-3.5">
+      <div className="flex min-h-0 flex-1 flex-col overflow-auto min-[1100px]:flex-row min-[1100px]:overflow-hidden">
+        <aside
+          aria-label="Graphs"
+          className="bg-card max-h-[40vh] w-full shrink-0 overflow-auto border-b p-3.5 min-[1100px]:max-h-none min-[1100px]:w-64 min-[1100px]:border-r min-[1100px]:border-b-0"
+        >
           <UploadDropzone />
           <GraphList />
         </aside>
-        <main className="min-w-0 flex-1 overflow-auto">
+        <main className="min-w-0 min-[1100px]:flex-1 min-[1100px]:overflow-auto">
           <Outlet />
         </main>
       </div>

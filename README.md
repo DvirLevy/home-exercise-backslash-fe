@@ -4,8 +4,8 @@ React app for the graph analysis platform: upload microservice graphs, see them 
 which routes lead from one kind of node to another. The backend lives in `../home-exercise-backslash-be`
 (API on port 3000, OpenAPI at `http://localhost:3000/docs/openapi.json`).
 
-> **Status:** Tasks 1 and 2 of 3 are done (graph management, graph canvas and node details). The route query panel
-> (task 3) comes next; see [`docs/plan.md`](docs/plan.md).
+> **Status:** all three planned tasks are done: graph management, the graph canvas with node details, and the route
+> query. See [`docs/plan.md`](docs/plan.md) for the decisions and the task split.
 
 ## Quick start
 
@@ -40,6 +40,19 @@ A single `.env` file, validated with Zod at startup (the app fails with a clear 
 The backend only accepts browsers from the origins in its own `CORS_ORIGINS`: `http://localhost:5173` for
 `npm run dev` and `http://localhost:8080` for the Docker image.
 
+## Using the app
+
+1. Upload a graph (drop a `.json` on the sidebar), or open one from the list.
+2. The whole graph is drawn left to right. Click a node for its details; use the search box to jump to one.
+3. In **Find routes**, choose filters for **Start at**, **Pass through** and **End at**. Several filters in one role are
+   combined with OR; all roles must hold (AND). The query is in the URL (`?start=public&through=vulnerable&end=sink`),
+   so it can be shared.
+4. **Highlight route** (default) keeps the whole graph and dims everything off the route; **Route only** draws just the
+   matching routes. Above 1,500 nodes only Route only is available, and nothing is drawn until a query is chosen.
+
+Filters are read-only here: they are created in the backend and only listed and picked in the app. A filter whose
+stored rule no longer compiles is shown as unavailable and cannot be picked.
+
 ## Docker
 
 ```bash
@@ -60,10 +73,13 @@ src/
   features/
     graph/                     graph management: list, upload / replace, rename, delete
       components/ hooks/ utils/
-    filters/                   (task 3) route query: read-only filters picked per role
+    filters/                   route query: read-only filters picked per role (OR inside a role, AND across roles)
+      components/ hooks/ utils/  RouteQueryPanel, RoleBox, FilterCombobox, NoRouteState; useFilters, useRoutes,
+                               useRouteQuery (URL state); routeQuery (parse / write the URL)
     visualization/             React Flow canvas, custom node, find-node, legend, node details
       components/ utils/       utils: layout (dagre), graphToFlow, nodeStyling (all pure)
-  components/                  shared: EmptyState, ErrorAlert
+  components/                  shared: EmptyState, ErrorAlert, JsonView
+  hooks/                       useDelayedFlag (spinners only after ~300 ms)
   services/                    API layer, the only place that uses axios:
                                apiClient, errors, schemas (Zod), queryKeys, one module per resource
   types/                       API types (z.infer of the schemas) and UI types

@@ -44,3 +44,10 @@ inside the feature, by two or more → shared folder. Features do not import eac
 - jest-dom's `toHaveStyle` cannot resolve `var(--token)`; assert on `element.style.<prop>` instead.
 - Canvas: `visualization/utils/graphToFlow` is the only place that builds React Flow nodes and edges; task 3 adds the
   route result (roles, dimming) there. Built-in edges are used, so there is no custom `RouteEdge` component.
+- Route query: URL state in `features/filters/hooks/useRouteQuery` (`replace` navigation, other params kept). With an
+  empty query no request is made (`enabled: false`); `placeholderData: keepPreviousData` keeps the old result while a
+  new one loads, so `GraphWorkspace` only uses `routes.data` while the query is non-empty and not in error. The routes
+  query key also contains the graph version.
+- `pages/GraphWorkspace.tsx` composes canvas, query panel and details; `planCanvas` (`visualization/utils/largeGraph`)
+  decides the mode (forced Route only above 1,500 nodes). The fake backend in `tests/msw/backend.ts` implements
+  filters and routes with the real semantics for small graphs.
