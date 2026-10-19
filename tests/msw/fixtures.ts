@@ -1,4 +1,4 @@
-import type { GraphDetail, GraphNode } from '@/types/api'
+import type { Filter, GraphDetail, GraphNode } from '@/types/api'
 
 export const API = 'http://localhost:3000'
 
@@ -52,4 +52,17 @@ export function graphFile(extra: Record<string, unknown> = {}) {
     'train-ticket.json',
     { type: 'application/json' },
   )
+}
+
+export function filter(key: string, overrides: Partial<Filter> = {}): Filter {
+  return {
+    key,
+    description: `${key} description`,
+    builtin: false,
+    definition: { field: 'kind', op: 'eq', value: 'x' },
+    matchCount: 1,
+    createdAt: 'x',
+    updatedAt: 'x',
+    ...overrides,
+  }
 }

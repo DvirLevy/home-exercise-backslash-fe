@@ -10,7 +10,13 @@ export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
-      <Toaster position="bottom-right" theme="system" />
+      {/* Bottom-left, as wide as the sidebar, so a toast never covers the canvas or the details panel. */}
+      <Toaster
+        position="bottom-left"
+        theme="system"
+        offset={12}
+        style={{ '--width': '232px' } as React.CSSProperties}
+      />
     </QueryClientProvider>
   )
 }

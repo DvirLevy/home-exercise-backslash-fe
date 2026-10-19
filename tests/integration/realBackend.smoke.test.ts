@@ -49,4 +49,29 @@ describe.skipIf(!process.env.SMOKE)('real backend smoke test', () => {
       }
     }
   })
+
+  it('highlights a real route on the real graph', async () => {
+    const graphs = await listGraphs()
+    const detail = await getGraph(graphs[0]!.id)
+    const route = await getRoutes(detail.id, {
+      start: ['public', 'vulnerable'],
+      through: [],
+      end: ['sink'],
+    })
+    expect(route.nodes.length).toBeGreaterThan(0)
+
+    const onRoute = new Set(route.nodes.map((n) => n.name))
+    const highlight = graphToFlow(detail, { route, mode: 'highlight' })
+    expect(
+      highlight.nodes
+        .filter((n) => !n.data.dimmed)
+        .map((n) => n.id)
+        .sort(),
+    ).toEqual([...onRoute].sort())
+    expect(highlight.nodes.find((n) => onRoute.has(n.id))!.data.roles.length).toBeGreaterThan(0)
+
+    const only = graphToFlow(detail, { route, mode: 'routeOnly' })
+    expect(only.nodes).toHaveLength(route.nodes.length)
+    expect(only.edges).toHaveLength(route.edges.length)
+  })
 })

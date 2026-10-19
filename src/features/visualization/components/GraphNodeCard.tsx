@@ -28,6 +28,7 @@ export function GraphNodeCard({ data, selected }: NodeProps<FlowNode>) {
       data-testid={`node-${node.name}`}
       data-placeholder={node.placeholder || undefined}
       data-role={role ?? undefined}
+      data-dimmed={dimmed || undefined}
       className={cn(
         'bg-card relative w-44 rounded-lg border px-2.5 py-2 shadow-sm',
         node.placeholder

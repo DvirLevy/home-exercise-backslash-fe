@@ -1,21 +1,6 @@
 import { useHealth } from './useHealth'
 
-/** Top-bar status dot and, when the API or its database is down, a banner. */
-export function HealthIndicator() {
-  const { data, error, isPending } = useHealth()
-  const down = Boolean(error) || data?.status === 'unavailable'
-  const label = isPending ? 'Checking API…' : down ? 'API offline' : 'API online'
-  return (
-    <div className="text-muted-foreground flex items-center gap-1.5 text-xs" role="status">
-      <span
-        aria-hidden
-        className={`inline-block size-2 rounded-full ${isPending ? 'bg-muted-foreground' : down ? 'bg-destructive' : 'bg-success'}`}
-      />
-      {label}
-    </div>
-  )
-}
-
+/** A banner shown only while the API or its database is down; it keeps retrying in the background. */
 export function HealthBanner() {
   const { data, error } = useHealth()
   if (error) {
