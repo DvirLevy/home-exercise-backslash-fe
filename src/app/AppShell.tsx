@@ -10,7 +10,7 @@ export function AppShell() {
       <TopBar />
       <HealthBanner />
       <div className="flex min-h-0 flex-1">
-        <aside className="bg-card w-64 shrink-0 overflow-auto border-r p-3.5">
+        <aside aria-label="Graphs" className="bg-card w-64 shrink-0 overflow-auto border-r p-3.5">
           <UploadDropzone />
           <GraphList />
         </aside>

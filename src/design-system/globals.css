@@ -30,6 +30,7 @@
   --color-secondary-foreground: var(--foreground);
   --color-destructive: var(--destructive);
   --color-success: var(--success);
+  --color-on-solid: var(--on-solid);
 
   --color-role-start: var(--role-start);
   --color-role-through: var(--role-through);

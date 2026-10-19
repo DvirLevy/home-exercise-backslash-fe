@@ -33,10 +33,12 @@ describe('upload', () => {
     await u.click(await screen.findByRole('button', { name: 'Upload' }))
 
     await waitFor(() => expect(router.state.location.pathname).toMatch(/^\/graphs\/g\d+$/))
-    expect(await screen.findByRole('heading', { name: 'train-ticket' })).toBeInTheDocument()
+    expect(await within(screen.getByRole('banner')).findByText('train-ticket')).toBeInTheDocument()
     expect(screen.getByText(/1 placeholder created: ghost/)).toBeInTheDocument()
     // The sidebar list was refreshed.
-    expect(within(screen.getByRole('complementary')).getByText('train-ticket')).toBeInTheDocument()
+    expect(
+      within(screen.getByRole('complementary', { name: 'Graphs' })).getByText('train-ticket'),
+    ).toBeInTheDocument()
   })
 
   it('opens the dialog with a dropped file already checked and named', async () => {
@@ -80,7 +82,9 @@ describe('open, rename, replace and delete', () => {
 
     expect(await screen.findByText('Renamed to "New name"')).toBeInTheDocument()
     await waitFor(() =>
-      expect(within(screen.getByRole('complementary')).getByText('New name')).toBeInTheDocument(),
+      expect(
+        within(screen.getByRole('complementary', { name: 'Graphs' })).getByText('New name'),
+      ).toBeInTheDocument(),
     )
     expect(within(screen.getByRole('banner')).getByText('New name')).toBeInTheDocument()
   })
@@ -129,10 +133,12 @@ describe('open, rename, replace and delete', () => {
     expect(await screen.findByText('Graph "Doomed" deleted')).toBeInTheDocument()
     await waitFor(() =>
       expect(
-        within(screen.getByRole('complementary')).queryByText('Doomed'),
+        within(screen.getByRole('complementary', { name: 'Graphs' })).queryByText('Doomed'),
       ).not.toBeInTheDocument(),
     )
-    expect(within(screen.getByRole('complementary')).getByText('Survivor')).toBeInTheDocument()
+    expect(
+      within(screen.getByRole('complementary', { name: 'Graphs' })).getByText('Survivor'),
+    ).toBeInTheDocument()
   })
 
   it('cancelling the delete confirmation keeps the graph', async () => {

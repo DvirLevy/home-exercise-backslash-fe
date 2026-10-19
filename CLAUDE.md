@@ -38,4 +38,9 @@ inside the feature, by two or more → shared folder. Features do not import eac
 - In jsdom tests, `request.formData()` fails (jsdom's `File` is not undici's); use `tests/msw/multipart.ts`.
 - MSW 3 option is `onUnhandledFrame`, not `onUnhandledRequest`.
 - `src/design-system/ui` is shadcn-style code and is excluded from ESLint.
-- React Flow tests (task 2) need `ResizeObserver` and `DOMMatrix` stubs in `tests/setup.ts`.
+- React Flow tests need the stubs in `tests/setup.ts` (`ResizeObserver`, `DOMMatrix`, element sizes). Click nodes and the
+  pane with `fireEvent.click`: user-event's mouse-down makes d3-zoom throw (`event.view` is missing in jsdom). Edges do
+  not render in jsdom (no handle measurements), so test edges through `graphToFlow`.
+- jest-dom's `toHaveStyle` cannot resolve `var(--token)`; assert on `element.style.<prop>` instead.
+- Canvas: `visualization/utils/graphToFlow` is the only place that builds React Flow nodes and edges; task 3 adds the
+  route result (roles, dimming) there. Built-in edges are used, so there is no custom `RouteEdge` component.

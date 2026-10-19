@@ -4,8 +4,8 @@ React app for the graph analysis platform: upload microservice graphs, see them 
 which routes lead from one kind of node to another. The backend lives in `../home-exercise-backslash-be`
 (API on port 3000, OpenAPI at `http://localhost:3000/docs/openapi.json`).
 
-> **Status:** Task 1 of 3 is done (foundation and graph management). The graph canvas (task 2) and the route query
-> panel (task 3) come next; see [`docs/plan.md`](docs/plan.md).
+> **Status:** Tasks 1 and 2 of 3 are done (graph management, graph canvas and node details). The route query panel
+> (task 3) comes next; see [`docs/plan.md`](docs/plan.md).
 
 ## Quick start
 
@@ -61,7 +61,8 @@ src/
     graph/                     graph management: list, upload / replace, rename, delete
       components/ hooks/ utils/
     filters/                   (task 3) route query: read-only filters picked per role
-    visualization/             (task 2) React Flow canvas and node details
+    visualization/             React Flow canvas, custom node, find-node, legend, node details
+      components/ utils/       utils: layout (dagre), graphToFlow, nodeStyling (all pure)
   components/                  shared: EmptyState, ErrorAlert
   services/                    API layer, the only place that uses axios:
                                apiClient, errors, schemas (Zod), queryKeys, one module per resource
@@ -87,5 +88,8 @@ Vitest + React Testing Library in jsdom, API mocked with MSW (`tests/msw/backend
 backend). Unit tests cover schemas, error normalization, the Axios client (repeated query params, `If-Match`,
 multipart upload), file checks and formatting; component tests cover the upload dialog (success, placeholders,
 400/413/415, 409 conflict), list, health banner; integration tests drive whole pages through the router.
+
+Canvas tests run React Flow in jsdom with stubs (`ResizeObserver`, `DOMMatrix`, element sizes) in `tests/setup.ts` and
+check nodes by their cards and classes, not pixels. `SMOKE=1 npm test` also runs a smoke test against the real backend.
 
 A task is done when the tests pass, `npm run typecheck` and `npm run lint` are clean.
