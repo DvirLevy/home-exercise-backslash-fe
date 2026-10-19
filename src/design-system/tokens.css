@@ -41,6 +41,7 @@
   --alert-warn-border: #fde68a;
   --alert-warn-fg: #92400e;
   --success: #059669;
+  --on-solid: #ffffff; /* text on solid role / severity badges */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -81,5 +82,6 @@
     --alert-warn-border: #78350f;
     --alert-warn-fg: #fde68a;
     --success: #34d399;
+    --on-solid: #0b1120;
   }
 }
