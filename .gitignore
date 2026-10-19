@@ -1,0 +1,31 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+dist-ssr
+*.tsbuildinfo
+
+# Test and coverage output
+coverage
+.vitest-cache
+
+# Logs
+*.log
+npm-debug.log*
+
+# Local overrides (.env itself is kept: it only holds the public API URL)
+*.local
+.env.local
+.env.*.local
+
+# Editors and OS
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.swp
+.DS_Store
+Thumbs.db
+
+# Claude Code local settings
+.claude/settings.local.json

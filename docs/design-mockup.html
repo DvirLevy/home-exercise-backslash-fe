@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Graph Explorer Mockup</title>
+<style>
+  /* ---------------------------------------------------------------------------------------
+     Design tokens. Names follow shadcn/ui CSS variables where one exists, so they map 1:1
+     onto the Tailwind theme of the real app. Domain tokens (roles, node kinds, severity)
+     are added on top.
+     --------------------------------------------------------------------------------------- */
+  :root {
+    --background: #f8fafc;        /* slate-50: app background, canvas */
+    --card: #ffffff;              /* panels, nodes */
+    --foreground: #0f172a;        /* slate-900: main text */
+    --muted: #f1f5f9;             /* slate-100: subtle fills */
+    --muted-foreground: #64748b;  /* slate-500: secondary text */
+    --border: #e2e8f0;            /* slate-200 */
+    --primary: #4f46e5;           /* indigo-600: primary actions, focus */
+    --primary-foreground: #ffffff;
+    --destructive: #dc2626;       /* red-600: delete, errors */
+    --ring: #a5b4fc;              /* indigo-300 */
+    --radius: 8px;
+
+    /* Route roles (from `matched.roles`) */
+    --role-start: #059669;        /* emerald-600 */
+    --role-through: #d97706;      /* amber-600 */
+    --role-end: #e11d48;          /* rose-600 */
+    --dimmed: 0.28;               /* opacity of nodes/edges outside the route */
+
+    /* Node kinds */
+    --kind-service: #4f46e5;      /* indigo */
+    --kind-rds: #0284c7;          /* sky: databases (rds, sql) */
+    --kind-sqs: #7c3aed;          /* violet: queues */
+    --kind-other: #475569;        /* slate: any other kind */
+    --placeholder: #94a3b8;       /* slate-400, dashed */
+
+    /* Vulnerability severity (free-form string; unknown values use --sev-other) */
+    --sev-critical: #9f1239;
+    --sev-high: #dc2626;
+    --sev-medium: #d97706;
+    --sev-low: #0284c7;
+    --sev-other: #64748b;
+
+    --font: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: var(--font); color: var(--foreground); background: #e9edf3; font-size: 14px; line-height: 1.45; }
+  h1, h2, h3 { margin: 0; }
+  .page { max-width: 1440px; margin: 0 auto; padding: 24px 16px 64px; }
+  .page > h1 { font-size: 22px; }
+  .page > p.lead { color: var(--muted-foreground); margin: 6px 0 20px; max-width: 900px; }
+  .section-title { font-size: 16px; margin: 40px 0 12px; }
+  .note { color: var(--muted-foreground); font-size: 12px; }
+
+  /* ---------- App shell ---------- */
+  .app { background: var(--background); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(15, 23, 42, .08); }
+  .topbar { height: 56px; display: flex; align-items: center; gap: 16px; padding: 0 16px; background: var(--card); border-bottom: 1px solid var(--border); }
+  .logo { display: flex; align-items: center; gap: 8px; font-weight: 650; }
+  .logo-mark { width: 26px; height: 26px; border-radius: 7px; background: var(--primary); display: grid; place-items: center; color: #fff; font-size: 13px; }
+  .crumb { color: var(--muted-foreground); }
+  .crumb b { color: var(--foreground); font-weight: 600; }
+  .spacer { flex: 1; }
+  .health { display: flex; align-items: center; gap: 6px; color: var(--muted-foreground); font-size: 12px; }
+  .dot { width: 8px; height: 8px; border-radius: 99px; background: #10b981; display: inline-block; }
+
+  .body { display: grid; grid-template-columns: 260px 1fr 340px; height: 720px; }
+  .sidebar, .panel { background: var(--card); overflow: auto; }
+  .sidebar { border-right: 1px solid var(--border); padding: 14px; }
+  .panel { border-left: 1px solid var(--border); padding: 14px; }
+
+  /* ---------- Generic controls (shadcn-like) ---------- */
+  .btn { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--card); color: var(--foreground); font: inherit; font-weight: 500; cursor: pointer; white-space: nowrap; }
+  .btn.primary { background: var(--primary); border-color: var(--primary); color: var(--primary-foreground); }
+  .btn.ghost { border-color: transparent; background: transparent; }
+  .btn.danger { color: var(--destructive); }
+  .btn.sm { height: 28px; padding: 0 10px; font-size: 13px; }
+  .btn.block { width: 100%; justify-content: center; }
+  .input { height: 32px; width: 100%; border: 1px solid var(--border); border-radius: var(--radius); padding: 0 10px; font: inherit; background: var(--card); }
+  .label { font-size: 12px; font-weight: 600; color: var(--muted-foreground); text-transform: uppercase; letter-spacing: .04em; margin: 16px 0 8px; display: flex; align-items: center; justify-content: space-between; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 7px; border-radius: 99px; font-size: 11px; font-weight: 600; border: 1px solid var(--border); background: var(--muted); color: var(--foreground); white-space: nowrap; }
+  .badge.solid { color: #fff; border-color: transparent; }
+  .kbd { font-family: var(--mono); font-size: 12px; background: var(--muted); border: 1px solid var(--border); border-radius: 5px; padding: 0 5px; }
+  .card { border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); }
+
+  /* ---------- Sidebar ---------- */
+  .dropzone { border: 1.5px dashed #c7cdd8; border-radius: var(--radius); padding: 16px 12px; text-align: center; color: var(--muted-foreground); background: var(--muted); }
+  .dropzone strong { color: var(--foreground); display: block; margin-bottom: 2px; }
+  .graph-item { display: block; padding: 9px 10px; border-radius: var(--radius); margin-bottom: 4px; cursor: pointer; }
+  .graph-item:hover { background: var(--muted); }
+  .graph-item.active { background: #eef2ff; outline: 1px solid #c7d2fe; }
+  .graph-item .name { font-weight: 600; }
+  .graph-item .meta { color: var(--muted-foreground); font-size: 12px; }
+
+  /* ---------- Canvas ---------- */
+  .canvas { position: relative; background-color: var(--background); background-image: radial-gradient(#d5dbe5 1px, transparent 1px); background-size: 18px 18px; overflow: hidden; }
+  .canvas-toolbar { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; gap: 8px; align-items: center; z-index: 2; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--card); }
+  .seg span { padding: 5px 10px; font-size: 13px; cursor: pointer; }
+  .seg span.on { background: var(--foreground); color: #fff; }
+  .result-pill { background: var(--card); border: 1px solid var(--border); border-radius: 99px; padding: 5px 12px; font-size: 13px; }
+  .legend { position: absolute; left: 12px; bottom: 12px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px; font-size: 12px; display: grid; gap: 4px; z-index: 2; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .controls { position: absolute; right: 12px; bottom: 12px; display: grid; gap: 4px; z-index: 2; }
+  .controls span { width: 30px; height: 30px; display: grid; place-items: center; background: var(--card); border: 1px solid var(--border); border-radius: 6px; font-weight: 600; }
+
+  /* Graph nodes (rendered by React Flow custom nodes in the real app) */
+  .node { position: absolute; width: 168px; background: var(--card); border: 1px solid var(--border); border-left: 4px solid var(--kind-service); border-radius: var(--radius); padding: 8px 10px; box-shadow: 0 1px 2px rgba(15, 23, 42, .06); z-index: 1; }
+  .node .n-name { font-weight: 600; font-size: 13px; }
+  .node .n-sub { color: var(--muted-foreground); font-size: 11px; display: flex; gap: 6px; align-items: center; margin-top: 2px; }
+  .node .n-badges { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+  .node.kind-rds { border-left-color: var(--kind-rds); }
+  .node.kind-sqs { border-left-color: var(--kind-sqs); }
+  .node.placeholder { border: 1.5px dashed var(--placeholder); border-left-width: 1.5px; background: #f8fafc; }
+  .node.placeholder .n-name { font-style: italic; color: var(--muted-foreground); }
+  .node.dim { opacity: var(--dimmed); }
+  .node.role-start { box-shadow: 0 0 0 2px var(--role-start); }
+  .node.role-through { box-shadow: 0 0 0 2px var(--role-through); }
+  .node.role-end { box-shadow: 0 0 0 2px var(--role-end); }
+  .node.selected { outline: 2px solid var(--primary); outline-offset: 3px; }
+  .role-tag { position: absolute; top: -10px; right: 8px; font-size: 10px; font-weight: 700; color: #fff; padding: 1px 6px; border-radius: 99px; letter-spacing: .03em; }
+  .role-tag.start { background: var(--role-start); }
+  .role-tag.through { background: var(--role-through); }
+  .role-tag.end { background: var(--role-end); }
+  svg.edges { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  /* ---------- Right panel ---------- */
+  .tabs { display: flex; gap: 2px; background: var(--muted); padding: 3px; border-radius: var(--radius); }
+  .tabs span { flex: 1; text-align: center; padding: 5px 0; border-radius: 6px; font-weight: 500; font-size: 13px; color: var(--muted-foreground); cursor: pointer; }
+  .tabs span.on { background: var(--card); color: var(--foreground); box-shadow: 0 1px 2px rgba(15, 23, 42, .08); }
+  .role-box { border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; margin-bottom: 10px; }
+  .role-head { display: flex; align-items: center; gap: 8px; font-weight: 600; margin-bottom: 8px; }
+  .role-head .swatch { width: 10px; height: 10px; border-radius: 3px; }
+  .role-head .hint { margin-left: auto; font-weight: 400; font-size: 11px; color: var(--muted-foreground); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 6px 0 9px; border-radius: 99px; background: var(--muted); border: 1px solid var(--border); font-size: 12px; font-weight: 500; }
+  .chip .x { width: 16px; height: 16px; display: grid; place-items: center; border-radius: 99px; color: var(--muted-foreground); }
+  .chip.add { border-style: dashed; color: var(--muted-foreground); background: transparent; padding: 0 9px; }
+  .or { font-size: 10px; font-weight: 700; color: var(--muted-foreground); align-self: center; }
+  .filter-row { display: flex; align-items: center; gap: 8px; padding: 8px 4px; border-bottom: 1px solid var(--border); }
+  .filter-row:last-child { border-bottom: 0; }
+  .filter-row .k { font-family: var(--mono); font-size: 12.5px; font-weight: 600; }
+  .filter-row .d { color: var(--muted-foreground); font-size: 12px; }
+  .filter-row .count { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--muted-foreground); font-size: 12px; }
+  .lock { font-size: 11px; }
+
+  /* Node details sheet */
+  .sheet { margin-top: 14px; border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; }
+  .sheet h3 { font-size: 15px; display: flex; align-items: center; gap: 8px; }
+  .kv { display: grid; grid-template-columns: 96px 1fr; gap: 6px 10px; margin-top: 10px; font-size: 13px; }
+  .kv dt { color: var(--muted-foreground); }
+  .kv dd { margin: 0; }
+  .vuln { border: 1px solid var(--border); border-radius: 6px; padding: 8px; margin-top: 8px; font-size: 12.5px; }
+  .vuln .file { font-family: var(--mono); font-size: 11.5px; color: var(--muted-foreground); word-break: break-all; }
+  pre.json { font-family: var(--mono); font-size: 11.5px; background: var(--muted); border: 1px solid var(--border); border-radius: 6px; padding: 8px; margin: 6px 0 0; white-space: pre-wrap; }
+
+  /* ---------- Design-system sheets ---------- */
+  .grid { display: grid; gap: 16px; }
+  .grid.c4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .grid.c3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .grid.c2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tile { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .tile h3 { font-size: 14px; margin-bottom: 10px; }
+  .swatches { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .sw { display: flex; gap: 8px; align-items: center; font-size: 12px; }
+  .sw i { width: 28px; height: 28px; border-radius: 6px; border: 1px solid rgba(0, 0, 0, .06); flex: none; }
+  .sw code { font-family: var(--mono); font-size: 11px; color: var(--muted-foreground); display: block; }
+  .static-node { position: relative; width: auto; }
+  .state { text-align: center; padding: 24px 16px; color: var(--muted-foreground); }
+  .state .icon { width: 40px; height: 40px; border-radius: 99px; display: grid; place-items: center; margin: 0 auto 10px; background: var(--muted); font-size: 18px; color: var(--foreground); }
+  .state b { color: var(--foreground); display: block; margin-bottom: 4px; }
+  .alert { border: 1px solid #fecaca; background: #fef2f2; color: #991b1b; border-radius: var(--radius); padding: 10px 12px; font-size: 13px; }
+  .alert.warn { border-color: #fde68a; background: #fffbeb; color: #92400e; }
+  .alert code { font-family: var(--mono); font-size: 12px; }
+  .skeleton { height: 12px; border-radius: 6px; background: linear-gradient(90deg, #eef2f7, #e2e8f0, #eef2f7); margin: 8px 0; }
+  .modal { background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 20px 50px rgba(15, 23, 42, .18); padding: 18px; }
+  .modal h3 { font-size: 16px; margin-bottom: 4px; }
+  .rule-row { display: grid; grid-template-columns: 1.2fr .8fr 1.2fr 28px; gap: 6px; margin-top: 8px; }
+  .select { height: 32px; border: 1px solid var(--border); border-radius: var(--radius); padding: 0 8px; display: flex; align-items: center; justify-content: space-between; background: var(--card); font-size: 13px; }
+  .select::after { content: "▾"; color: var(--muted-foreground); }
+  .rule-group { border: 1px solid var(--border); border-left: 3px solid var(--primary); border-radius: var(--radius); padding: 10px; margin-top: 10px; }
+  .toast { display: flex; gap: 10px; align-items: flex-start; background: var(--foreground); color: #fff; border-radius: 10px; padding: 12px 14px; font-size: 13px; box-shadow: 0 10px 30px rgba(15, 23, 42, .25); }
+  .toast small { color: #cbd5e1; display: block; }
+
+  @media (max-width: 1100px) {
+    .body { grid-template-columns: 1fr; height: auto; }
+    .canvas { height: 560px; }
+    .grid.c4, .grid.c3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 640px) {
+    .grid.c4, .grid.c3, .grid.c2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Graph Explorer: design mockup</h1>
+  <p class="lead">
+    Static mockup for the frontend of the graph analysis platform. Screen 1 is the main view: a graph is selected, the route
+    query <span class="kbd">start=public</span> <span class="kbd">through=vulnerable</span> <span class="kbd">end=sink</span>
+    is applied, the matching subgraph is highlighted on the full graph, and one node is open in the details panel. Below it:
+    tokens, components and every application state. Colors are design tokens (CSS variables), meant to become the Tailwind /
+    shadcn theme.
+  </p>
+
+  <!-- ================================================================================= -->
+  <h2 class="section-title">1. Main screen (route highlighted on the full graph)</h2>
+  <div class="app">
+    <div class="topbar">
+      <div class="logo"><span class="logo-mark">◆</span> Graph Explorer</div>
+      <div class="crumb">Graphs / <b>Train Ticket</b></div>
+      <span class="badge" title="Graph version (ETag)">v3</span>
+      <span class="badge">47 nodes</span><span class="badge">98 edges</span>
+      <div class="spacer"></div>
+      <button class="btn sm">Replace file…</button>
+      <button class="btn sm">Rename</button>
+      <button class="btn sm danger">Delete</button>
+      <div class="health"><span class="dot"></span> API online</div>
+    </div>
+
+    <div class="body">
+      <!-- Left: graphs + upload -->
+      <aside class="sidebar">
+        <div class="dropzone">
+          <strong>Upload a graph</strong>
+          Drop a .json file or <u>browse</u><br /><span class="note">up to 10 MB</span>
+        </div>
+        <div class="label">Graphs <span class="badge">3</span></div>
+        <div class="graph-item active"><div class="name">Train Ticket</div><div class="meta">47 nodes · 98 edges · v3 · 2 min ago</div></div>
+        <div class="graph-item"><div class="name">Payments</div><div class="meta">3 nodes · 2 edges · v1 · yesterday</div></div>
+        <div class="graph-item"><div class="name">Train Ticket</div><div class="meta">47 nodes · 98 edges · v1 · Oct 12</div></div>
+        <p class="note" style="margin-top:10px">Names need not be unique; items show counts and dates to tell them apart.</p>
+      </aside>
+
+      <!-- Center: canvas -->
+      <main class="canvas">
+        <div class="canvas-toolbar">
+          <div class="seg"><span class="on">Highlight route</span><span>Route only</span><span>Whole graph</span></div>
+          <span class="result-pill"><b>21</b> nodes · <b>40</b> edges on matching routes</span>
+          <div class="spacer"></div>
+          <input class="input" style="width:200px;height:30px" placeholder="Find a node…" />
+        </div>
+
+        <svg class="edges" viewBox="0 0 860 720" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#94a3b8" /></marker>
+            <marker id="arrow-hi" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#4f46e5" /></marker>
+          </defs>
+          <!-- dimmed edges -->
+          <path d="M150 150 C 200 150, 220 120, 270 120" stroke="#94a3b8" stroke-width="1.5" fill="none" opacity=".35" marker-end="url(#arrow)" />
+          <path d="M460 300 C 520 300, 520 470, 580 470" stroke="#94a3b8" stroke-width="1.5" fill="none" opacity=".35" marker-end="url(#arrow)" />
+          <path d="M460 300 C 520 300, 520 590, 580 590" stroke="#94a3b8" stroke-width="1.5" fill="none" opacity=".35" marker-end="url(#arrow)" />
+          <!-- route edges -->
+          <path d="M150 300 C 220 300, 220 300, 290 300" stroke="#4f46e5" stroke-width="2.5" fill="none" marker-end="url(#arrow-hi)" />
+          <path d="M150 420 C 220 420, 230 320, 290 315" stroke="#4f46e5" stroke-width="2.5" fill="none" marker-end="url(#arrow-hi)" />
+          <path d="M460 300 C 520 300, 520 300, 580 300" stroke="#4f46e5" stroke-width="2.5" fill="none" marker-end="url(#arrow-hi)" />
+          <path d="M460 300 C 510 300, 520 180, 580 180" stroke="#4f46e5" stroke-width="2.5" fill="none" marker-end="url(#arrow-hi)" />
+          <path d="M750 180 C 790 180, 790 300, 750 300" stroke="#4f46e5" stroke-width="2.5" fill="none" marker-end="url(#arrow-hi)" />
+        </svg>
+
+        <!-- nodes (positions are illustrative; the real app uses an automatic layout) -->
+        <div class="node dim" style="left:-20px;top:126px"><div class="n-name">gateway-service</div><div class="n-sub">service · java</div><div class="n-badges"><span class="badge">🌐 Public</span></div></div>
+        <div class="node dim" style="left:280px;top:96px"><div class="n-name">admin-basic-info-service</div><div class="n-sub">service · java</div></div>
+
+        <div class="node role-start" style="left:-20px;top:276px"><span class="role-tag start">START</span><div class="n-name">frontend</div><div class="n-sub">service · java</div><div class="n-badges"><span class="badge">🌐 Public</span></div></div>
+        <div class="node" style="left:-20px;top:396px"><div class="n-name">user-service</div><div class="n-sub">service · java</div></div>
+
+        <div class="node role-through selected" style="left:290px;top:270px"><span class="role-tag through">THROUGH</span><div class="n-name">order-service</div><div class="n-sub">service · java</div><div class="n-badges"><span class="badge solid" style="background:var(--sev-high)">2 vulns · high</span></div></div>
+
+        <div class="node kind-rds role-end" style="left:580px;top:276px"><span class="role-tag end">END</span><div class="n-name">prod-postgresdb</div><div class="n-sub">rds · AWS · postgres 9.6</div><div class="n-badges"><span class="badge">Sink</span></div></div>
+        <div class="node" style="left:580px;top:156px"><div class="n-name">station-service</div><div class="n-sub">service · java</div></div>
+
+        <div class="node kind-sqs dim" style="left:580px;top:446px"><div class="n-name">prod-sqs</div><div class="n-sub">sqs · AWS</div></div>
+        <div class="node placeholder dim" style="left:580px;top:566px"><div class="n-name">assurance-service</div><div class="n-sub">placeholder · not defined in the file</div></div>
+
+        <div class="legend">
+          <div><i style="background:var(--role-start)"></i>Start</div>
+          <div><i style="background:var(--role-through)"></i>Through</div>
+          <div><i style="background:var(--role-end)"></i>End</div>
+          <div><i style="background:#e2e8f0;border:1px dashed #94a3b8"></i>Placeholder</div>
+          <div><i style="background:#cbd5e1;opacity:.5"></i>Not on a route</div>
+        </div>
+        <div class="controls"><span>+</span><span>−</span><span>⤢</span></div>
+      </main>
+
+      <!-- Right: query + filters + details -->
+      <aside class="panel">
+        <div class="tabs"><span class="on">Route query</span><span>Filters</span></div>
+
+        <div class="label">Find routes <button class="btn ghost sm">Clear</button></div>
+
+        <div class="role-box">
+          <div class="role-head"><span class="swatch" style="background:var(--role-start)"></span>Start at<span class="hint">any of (OR)</span></div>
+          <div class="chips"><span class="chip">public <span class="x">×</span></span><span class="chip add">+ add filter</span></div>
+        </div>
+        <div class="role-box">
+          <div class="role-head"><span class="swatch" style="background:var(--role-through)"></span>Pass through<span class="hint">any of (OR)</span></div>
+          <div class="chips"><span class="chip">vulnerable <span class="x">×</span></span><span class="or">OR</span><span class="chip">high-severity <span class="x">×</span></span><span class="chip add">+ add</span></div>
+        </div>
+        <div class="role-box">
+          <div class="role-head"><span class="swatch" style="background:var(--role-end)"></span>End at<span class="hint">any of (OR)</span></div>
+          <div class="chips"><span class="chip">sink <span class="x">×</span></span><span class="chip add">+ add filter</span></div>
+        </div>
+        <p class="note">All three roles must hold (AND). A role left empty is unconstrained. The query lives in the URL, so it can be shared.</p>
+
+        <!-- Node details -->
+        <div class="sheet">
+          <h3>order-service <span class="badge solid" style="background:var(--role-through)">through</span></h3>
+          <dl class="kv">
+            <dt>Kind</dt><dd>service</dd>
+            <dt>Language</dt><dd>java</dd>
+            <dt>Path</dt><dd><span class="kbd">train-ticket/ts-order-service</span></dd>
+            <dt>Public</dt><dd>No</dd>
+            <dt>Matches</dt><dd><span class="badge">vulnerable</span> <span class="badge">high-severity</span></dd>
+          </dl>
+          <div class="label" style="margin-top:12px">Vulnerabilities <span class="badge">2</span></div>
+          <div class="vuln"><span class="badge solid" style="background:var(--sev-high)">high</span> File open from tainted variable<div class="file">…/order/service/OrderServiceImpl.java · CWE-22</div></div>
+          <div class="vuln"><span class="badge solid" style="background:var(--sev-medium)">medium</span> SQL statement built by string concatenation<div class="file">…/order/service/OrderServiceImpl.java · CWE-22</div></div>
+          <div class="label" style="margin-top:12px">Other fields (extra)</div>
+          <pre class="json">null</pre>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- ================================================================================= -->
+  <h2 class="section-title">2. Filters tab and the filter builder</h2>
+  <div class="grid c2">
+    <div class="tile">
+      <h3>Filters of this graph</h3>
+      <div class="filter-row"><span class="lock" title="Built-in, read-only">🔒</span><div><div class="k">public</div><div class="d">publicExposed is true</div></div><span class="count">2 nodes</span></div>
+      <div class="filter-row"><span class="lock">🔒</span><div><div class="k">sink</div><div class="d">kind is rds or sql</div></div><span class="count">1 node</span></div>
+      <div class="filter-row"><span class="lock">🔒</span><div><div class="k">vulnerable</div><div class="d">at least one vulnerability</div></div><span class="count">2 nodes</span></div>
+      <div class="filter-row"><span style="width:14px"></span><div><div class="k">high-severity</div><div class="d">vulnerabilities some severity = high</div></div><span class="count">1 node</span><button class="btn ghost sm">Edit</button><button class="btn ghost sm danger">Delete</button></div>
+      <div class="filter-row"><span style="width:14px"></span><div><div class="k">broken-rule</div><div class="d">stored rule no longer compiles</div></div><span class="badge" style="color:var(--destructive);border-color:#fecaca;background:#fef2f2">unavailable</span><button class="btn ghost sm">Fix</button></div>
+      <div style="margin-top:12px"><button class="btn primary sm">+ New filter</button></div>
+    </div>
+
+    <div class="modal">
+      <h3>New filter</h3>
+      <p class="note" style="margin:0 0 12px">Built visually; switch to JSON to see or paste the raw rule.</p>
+      <div class="grid c2" style="gap:8px">
+        <div><div class="label" style="margin:0 0 4px">Key</div><input class="input" value="postgres-sinks" /><div class="note">lowercase, digits, hyphens · used in the URL</div></div>
+        <div><div class="label" style="margin:0 0 4px">Description</div><input class="input" value="Postgres databases" /></div>
+      </div>
+      <div class="seg" style="margin-top:12px"><span class="on">Builder</span><span>JSON</span></div>
+      <div class="rule-group">
+        <div style="display:flex;gap:8px;align-items:center"><span class="note">Match</span><div class="select" style="width:110px">all of</div><span class="note">these conditions</span></div>
+        <div class="rule-row"><div class="select">kind</div><div class="select">is one of</div><div class="select">rds, sql</div><button class="btn ghost sm">×</button></div>
+        <div class="rule-row"><div class="select">metadata.engine</div><div class="select">contains</div><input class="input" value="postgres" /><button class="btn ghost sm">×</button></div>
+        <div style="margin-top:8px;display:flex;gap:6px"><button class="btn sm">+ Condition</button><button class="btn sm">+ Group</button></div>
+      </div>
+      <div class="card" style="margin-top:12px;padding:10px;display:flex;align-items:center;gap:8px">
+        <span class="badge solid" style="background:var(--primary)">Preview</span>
+        <span>Matches <b>1</b> node: <span class="kbd">prod-postgresdb</span></span>
+      </div>
+      <div class="alert" style="margin-top:10px"><b>definition.all.1.field</b>: is not a known field. Use "name", "kind", … (example of a server error shown inline, at the path the API returns)</div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="btn">Cancel</button><button class="btn primary">Save filter</button></div>
+    </div>
+  </div>
+
+  <!-- ================================================================================= -->
+  <h2 class="section-title">3. Design tokens</h2>
+  <div class="grid c4">
+    <div class="tile"><h3>Surface &amp; text</h3><div class="swatches">
+      <div class="sw"><i style="background:var(--background)"></i><div>background<code>slate-50</code></div></div>
+      <div class="sw"><i style="background:var(--card)"></i><div>card<code>white</code></div></div>
+      <div class="sw"><i style="background:var(--foreground)"></i><div>foreground<code>slate-900</code></div></div>
+      <div class="sw"><i style="background:var(--muted-foreground)"></i><div>muted<code>slate-500</code></div></div>
+      <div class="sw"><i style="background:var(--border)"></i><div>border<code>slate-200</code></div></div>
+      <div class="sw"><i style="background:var(--primary)"></i><div>primary<code>indigo-600</code></div></div>
+    </div></div>
+    <div class="tile"><h3>Route roles</h3><div class="swatches">
+      <div class="sw"><i style="background:var(--role-start)"></i><div>start<code>emerald-600</code></div></div>
+      <div class="sw"><i style="background:var(--role-through)"></i><div>through<code>amber-600</code></div></div>
+      <div class="sw"><i style="background:var(--role-end)"></i><div>end<code>rose-600</code></div></div>
+      <div class="sw"><i style="background:#cbd5e1;opacity:.5"></i><div>off-route<code>opacity .28</code></div></div>
+    </div><p class="note">Never rely on color alone: roles also get a text tag (START / THROUGH / END).</p></div>
+    <div class="tile"><h3>Node kinds</h3><div class="swatches">
+      <div class="sw"><i style="background:var(--kind-service)"></i><div>service<code>indigo</code></div></div>
+      <div class="sw"><i style="background:var(--kind-rds)"></i><div>rds / sql<code>sky</code></div></div>
+      <div class="sw"><i style="background:var(--kind-sqs)"></i><div>sqs<code>violet</code></div></div>
+      <div class="sw"><i style="background:var(--kind-other)"></i><div>other kind<code>slate</code></div></div>
+    </div><p class="note">Kinds are free strings; unknown ones fall back to "other".</p></div>
+    <div class="tile"><h3>Severity</h3><div class="swatches">
+      <div class="sw"><i style="background:var(--sev-critical)"></i><div>critical</div></div>
+      <div class="sw"><i style="background:var(--sev-high)"></i><div>high</div></div>
+      <div class="sw"><i style="background:var(--sev-medium)"></i><div>medium</div></div>
+      <div class="sw"><i style="background:var(--sev-low)"></i><div>low</div></div>
+      <div class="sw"><i style="background:var(--sev-other)"></i><div>any other value</div></div>
+    </div><p class="note">Severity is free-form; match case-insensitively, show the original text.</p></div>
+  </div>
+
+  <div class="grid c3" style="margin-top:16px">
+    <div class="tile"><h3>Typography &amp; spacing</h3>
+      <div style="font-size:22px;font-weight:650">Inter 22 / 650: page title</div>
+      <div style="font-size:16px;font-weight:600;margin-top:4px">Inter 16 / 600: section</div>
+      <div style="font-size:14px;margin-top:4px">Inter 14 / 400: body</div>
+      <div style="font-size:12px;color:var(--muted-foreground);margin-top:4px">Inter 12: meta, hints</div>
+      <div style="font-family:var(--mono);font-size:12.5px;margin-top:4px">JetBrains Mono 12.5: keys, JSON, paths</div>
+      <p class="note" style="margin-top:10px">4 px spacing grid · radius 8 px (cards 12 px) · focus ring indigo-300, 2 px · min hit target 32 px.</p>
+    </div>
+    <div class="tile"><h3>Node variants</h3>
+      <div style="display:grid;gap:14px">
+        <div class="node static-node"><div class="n-name">auth-service</div><div class="n-sub">service · java</div><div class="n-badges"><span class="badge solid" style="background:var(--sev-medium)">1 vuln · medium</span></div></div>
+        <div class="node static-node kind-rds"><div class="n-name">prod-postgresdb</div><div class="n-sub">rds · AWS · postgres 9.6</div><div class="n-badges"><span class="badge">Sink</span></div></div>
+        <div class="node static-node placeholder"><div class="n-name">assurance-service</div><div class="n-sub">placeholder · not defined in the file</div></div>
+      </div>
+    </div>
+    <div class="tile"><h3>Badges &amp; buttons</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <span class="badge">🌐 Public</span><span class="badge">Sink</span><span class="badge">🔒 built-in</span><span class="badge">v3</span>
+        <span class="badge solid" style="background:var(--sev-high)">high</span><span class="badge solid" style="background:var(--role-start)">start</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px">
+        <button class="btn primary sm">Primary</button><button class="btn sm">Secondary</button><button class="btn ghost sm">Ghost</button><button class="btn sm danger">Destructive</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================================= -->
+  <h2 class="section-title">4. Application states</h2>
+  <div class="grid c4">
+    <div class="tile"><h3>No graphs yet</h3><div class="state"><div class="icon">⬆</div><b>Upload your first graph</b>Drop a JSON file describing your services.<br /><br /><button class="btn primary sm">Choose file</button></div></div>
+    <div class="tile"><h3>Loading</h3><div class="skeleton" style="width:70%"></div><div class="skeleton"></div><div class="skeleton" style="width:55%"></div><div class="skeleton" style="width:80%"></div><p class="note">Skeletons for lists; a spinner overlay on the canvas only after ~300 ms.</p></div>
+    <div class="tile"><h3>No route found</h3><div class="state"><div class="icon">∅</div><b>No route matches</b>No path from <span class="kbd">public</span> to <span class="kbd">sink</span>. Try removing a role.<br /><br /><button class="btn sm">Clear query</button></div></div>
+    <div class="tile"><h3>API unreachable</h3><div class="alert"><b>Can't reach the API.</b> /health reports the database is down. Retrying…</div><p class="note">Driven by <span class="kbd">GET /health</span> and network errors.</p></div>
+
+    <div class="tile"><h3>Upload rejected (400)</h3><div class="alert"><b>The file is not valid</b><br /><code>nodes.3.publicExposed</code>: expected boolean<br /><code>nodes.7.name</code>: Duplicate node name "auth"</div><p class="note">List <span class="kbd">error.details</span> with their paths.</p></div>
+    <div class="tile"><h3>Uploaded with placeholders</h3><div class="toast">✓<div>Graph "Train Ticket" uploaded<small>47 nodes · 98 edges · 1 placeholder created: assurance-service</small></div></div></div>
+    <div class="tile"><h3>Version conflict (409)</h3><div class="alert warn"><b>This graph changed since you opened it.</b> Someone replaced it or edited a filter.<br /><br /><button class="btn sm">Reload graph</button> <button class="btn sm">Overwrite anyway</button></div></div>
+    <div class="tile"><h3>Large graph</h3><div class="alert warn"><b>48,210 nodes.</b> Showing the route result only; the whole graph is too large to draw smoothly.</div><p class="note">Threshold decided in planning.</p></div>
+  </div>
+</div>
+</body>
+</html>

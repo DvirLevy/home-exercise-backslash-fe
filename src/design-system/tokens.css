@@ -1,0 +1,85 @@
+/* Design tokens from docs/design-mockup.html. Names follow shadcn/ui variables; domain tokens
+   (roles, node kinds, severity) are added on top. Dark values follow the browser setting. */
+:root {
+  color-scheme: light dark;
+
+  --background: #f8fafc;
+  --card: #ffffff;
+  --foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --primary: #4f46e5;
+  --primary-foreground: #ffffff;
+  --accent: #eef2ff;
+  --destructive: #dc2626;
+  --ring: #a5b4fc;
+  --radius: 0.5rem;
+
+  --role-start: #047857;
+  --role-through: #b45309;
+  --role-end: #e11d48;
+  --dimmed: 0.28;
+
+  --kind-service: #4f46e5;
+  --kind-rds: #0284c7;
+  --kind-sqs: #7c3aed;
+  --kind-other: #475569;
+  --placeholder: #94a3b8;
+
+  --sev-critical: #9f1239;
+  --sev-high: #dc2626;
+  --sev-medium: #b45309;
+  --sev-low: #0369a1;
+  --sev-other: #64748b;
+
+  --alert-error-bg: #fef2f2;
+  --alert-error-border: #fecaca;
+  --alert-error-fg: #991b1b;
+  --alert-warn-bg: #fffbeb;
+  --alert-warn-border: #fde68a;
+  --alert-warn-fg: #92400e;
+  --success: #059669;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0b1120;
+    --card: #111827;
+    --foreground: #f1f5f9;
+    --muted: #1e293b;
+    --muted-foreground: #94a3b8;
+    --border: #1f2a3d;
+    --input: #334155;
+    --primary: #6366f1;
+    --primary-foreground: #ffffff;
+    --accent: #1e1b4b;
+    --destructive: #f87171;
+    --ring: #6366f1;
+
+    --role-start: #34d399;
+    --role-through: #fbbf24;
+    --role-end: #fb7185;
+
+    --kind-service: #818cf8;
+    --kind-rds: #38bdf8;
+    --kind-sqs: #a78bfa;
+    --kind-other: #94a3b8;
+    --placeholder: #64748b;
+
+    --sev-critical: #fb7185;
+    --sev-high: #f87171;
+    --sev-medium: #fbbf24;
+    --sev-low: #38bdf8;
+    --sev-other: #94a3b8;
+
+    --alert-error-bg: #2a1215;
+    --alert-error-border: #7f1d1d;
+    --alert-error-fg: #fecaca;
+    --alert-warn-bg: #2a2010;
+    --alert-warn-border: #78350f;
+    --alert-warn-fg: #fde68a;
+    --success: #34d399;
+  }
+}
