@@ -150,7 +150,7 @@ function Canvas({
         <Legend showRoles={route !== null} />
       </Panel>
       {overlay ? (
-        <Panel position="top-center" className="!top-1/3">
+        <Panel position="top-center" className="top-1/3!">
           {overlay}
         </Panel>
       ) : null}
